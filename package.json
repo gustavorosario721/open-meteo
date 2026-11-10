@@ -1,0 +1,22 @@
+{
+  "name": "sistema-consulta-meteorologica",
+  "version": "1.0.0",
+  "description": "Sistema de consulta meteorológica baseado em microsserviços e Open-Meteo",
+  "main": "gateway/server.js",
+  "scripts": {
+    "install:all": "npm install && npm --prefix servico-localizacao install && npm --prefix servico-meteorologia install && npm --prefix gateway install",
+    "dev": "concurrently -n \"LOCALIZACAO,METEOROLOGIA,GATEWAY,VITE\" -c \"cyan,yellow,green,blue\" \"npm --prefix servico-localizacao start\" \"npm --prefix servico-meteorologia start\" \"npm --prefix gateway start\" \"vite --config frontend/vite.config.js\"",
+    "build": "vite --config frontend/vite.config.js build",
+    "start:all": "npm run build && concurrently -n \"LOCALIZACAO,METEOROLOGIA,GATEWAY\" -c \"cyan,yellow,green\" \"npm --prefix servico-localizacao start\" \"npm --prefix servico-meteorologia start\" \"npm --prefix gateway start\""
+  },
+  "devDependencies": {
+    "chart.js": "^4.6.1",
+    "concurrently": "^8.2.2",
+    "vite": "^6.4.6"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#eaf4ff">
+    <meta name="description" content="Consulte o clima atual e a previsão para os próximos dias em qualquer cidade.">
+    <title>Clima — previsão do tempo</title>
+  </head>
+  <body>
+    <canvas id="weatherEffects" class="weather-effects" aria-hidden="true"></canvas>
+    <div class="app-container">
+      <header class="app-header">
+        <a class="brand" href="/" aria-label="Clima, início">
+          <span class="brand-mark" aria-hidden="true">☀</span>
+          <span>clima<span class="brand-dot">.</span></span>
+        </a>
+        <nav class="mode-tabs" aria-label="Tipo de consulta">
+          <button id="btnModoUnico" class="tab-btn active" type="button">Previsão</button>
+          <button id="btnModoComparar" class="tab-btn" type="button">Comparar cidades</button>
+        </nav>
+        <span class="header-note"><span class="status-dot"></span> Dados em tempo real</span>
+      </header>
+
+      <div id="mensagemErro" class="error-banner hidden" role="alert" aria-live="polite"></div>
+      <div id="loadingSpinner" class="loading-spinner hidden" role="status" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Buscando a previsão...</span>
+      </div>
+
+      <main id="secaoUnica" class="main-content">
+        <section class="page-intro">
+          <div>
+            <p class="eyebrow">SEU TEMPO, DE PRIMEIRA</p>
+            <h1>Como está o céu por aí?</h1>
+            <p class="intro-copy">Acompanhe as condições do tempo e planeje os próximos dias.</p>
+          </div>
+          <div id="iconeDestaqueClima" class="intro-sun" aria-hidden="true">☀️</div>
+        </section>
+
+        <section class="search-section" aria-label="Buscar previsão por cidade">
+          <form id="formBusca">
+            <label class="sr-only" for="inputCidade">Nome da cidade</label>
+            <div class="input-group">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input type="text" id="inputCidade" placeholder="Busque uma cidade..." maxlength="100" autocomplete="off">
+              <button type="submit" id="btnBuscar" class="primary-btn"><span>Buscar</span><span aria-hidden="true">→</span></button>
+            </div>
+          </form>
+          <section class="history-section" aria-label="Buscas recentes">
+            <span class="history-label">Recentes</span>
+            <div id="listaHistorico" class="history-chips">
+              <span class="empty-history">Suas cidades recentes aparecerão aqui</span>
+            </div>
+          </section>
+        </section>
+
+        <section id="secaoHomonimas" class="homonyms-card hidden">
+          <h2>Cidades encontradas</h2>
+          <p>Selecione a localização desejada.</p>
+          <ul id="listaHomonimas" class="homonyms-list"></ul>
+        </section>
+
+        <section id="cardClimaAtual" class="weather-card hidden" aria-live="polite">
+          <div class="card-header">
+            <div class="location-heading">
+              <span class="location-pin" aria-hidden="true">⌖</span>
+              <div>
+                <p class="section-kicker">CLIMA AGORA</p>
+                <h2 id="localNome">-</h2>
+                <p id="localDetalhes" class="subtitle">-</p>
+                <small id="localCoords" class="coords">-</small>
+              </div>
+            </div>
+            <button id="btnAtualizar" class="secondary-btn" type="button" aria-label="Atualizar previsão"><span aria-hidden="true">↻</span> Atualizar</button>
+          </div>
+
+          <div class="current-main">
+            <div class="current-weather">
+              <span id="iconeWMO" class="weather-icon" aria-hidden="true">☀️</span>
+              <div class="temp-degrees"><span id="tempAtual">--</span><span class="unit">°C</span></div>
+            </div>
+            <div class="desc-box">
+              <strong id="descWMO">--</strong>
+              <p>Sensação térmica de <span id="sensacaoTermica">--</span>°C</p>
+              <p id="observadoEm" class="obs-time">Observado em: --</p>
+            </div>
+            <div class="weather-divider"></div>
+            <div class="details-grid">
+              <div class="detail-item">
+                <span class="detail-icon" aria-hidden="true">↗</span>
+                <span class="label">VENTO</span>
+                <span id="ventoTexto" class="val">--</span>
+                <small id="ventoVelocidade">-- km/h</small>
+              </div>
+              <div class="detail-item">
+                <span class="detail-icon uv-icon" aria-hidden="true">☼</span>
+                <span class="label">ÍNDICE UV</span>
+                <span id="uvIndice" class="val">--</span>
+                <small id="uvClassificacao" class="badge">--</small>
+              </div>
+            </div>
+          </div>
+          <div class="update-timestamp"><span id="atualizadoEmTexto">Atualizado às --:--:--</span></div>
+        </section>
+
+        <section id="secaoPrevisao" class="forecast-section hidden">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">OLHE PARA FRENTE</p>
+              <h2>Próximos dias</h2>
+            </div>
+            <span class="forecast-period">5 dias</span>
+          </div>
+          <div id="gridPrevisao" class="forecast-grid"></div>
+        </section>
+
+        <section id="secaoGrafico" class="chart-section hidden">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">TENDÊNCIA DA SEMANA</p>
+              <h2>Variação de temperatura</h2>
+            </div>
+            <span class="chart-unit">°C</span>
+          </div>
+          <div class="chart-container"><canvas id="graficoTemperatura" aria-label="Gráfico de temperaturas máximas e mínimas"></canvas></div>
+        </section>
+      </main>
+
+      <main id="secaoComparar" class="main-content hidden">
+        <section class="page-intro">
+          <div>
+            <p class="eyebrow">DUAS CIDADES, UM OLHAR</p>
+            <h1>Compare o clima</h1>
+            <p class="intro-copy">Descubra o que muda entre dois destinos.</p>
+          </div>
+          <div id="iconeDestaqueComparacao" class="intro-sun" aria-hidden="true">🌤️</div>
+        </section>
+        <section class="search-section compare-search" aria-label="Selecionar cidades para comparar">
+          <form id="formComparar">
+            <div class="compare-inputs">
+              <div class="input-group">
+                <label for="inputCidadeA">Cidade de origem</label>
+                <input type="text" id="inputCidadeA" placeholder="Ex.: Salvador" autocomplete="off">
+              </div>
+              <span class="compare-versus" aria-hidden="true">×</span>
+              <div class="input-group">
+                <label for="inputCidadeB">Outro destino</label>
+                <input type="text" id="inputCidadeB" placeholder="Ex.: Lisboa" autocomplete="off">
+              </div>
+            </div>
+            <button type="submit" id="btnComparar" class="primary-btn wide-btn">Comparar previsões <span aria-hidden="true">→</span></button>
+          </form>
+        </section>
+
+        <section id="resultadoComparacao" class="compare-results hidden">
+          <div id="diffDestaque" class="diff-banner"></div>
+          <div class="compare-grid">
+            <article id="cardCidadeA" class="compare-card"></article>
+            <article id="cardCidadeB" class="compare-card"></article>
+          </div>
+          <section class="chart-section">
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">COMPARATIVO</p>
+                <h2>Temperaturas nos próximos dias</h2>
+              </div>
+              <span class="chart-unit">°C</span>
+            </div>
+            <div class="chart-container"><canvas id="graficoComparacao" aria-label="Gráfico comparativo de temperaturas"></canvas></div>
+          </section>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <span class="footer-brand"><span aria-hidden="true">☀</span> clima.</span>
+        <p>Previsão meteorológica fornecida pela Open-Meteo</p>
+      </footer>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
