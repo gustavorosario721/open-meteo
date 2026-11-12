@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SERVICO_LOCALIZACAO_URL = process.env.LOCALIZACAO_URL || (process.env.VERCEL ? '' : 'http://localhost:3001');
 const SERVICO_METEOROLOGIA_URL = process.env.METEOROLOGIA_URL || (process.env.VERCEL ? '' : 'http://localhost:3002');
-const TIMEOUT_MS = 5000;
+const TIMEOUT_MS = Number(process.env.MICROSERVICO_TIMEOUT_MS) || 90000;
 
 if (process.env.VERCEL && (!SERVICO_LOCALIZACAO_URL || !SERVICO_METEOROLOGIA_URL)) {
   throw new Error('Configure LOCALIZACAO_URL e METEOROLOGIA_URL com as URLs públicas dos microsserviços.');
@@ -31,16 +31,22 @@ async function fetchComTimeout(url) {
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
     const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    return response;
+    // O timeout permanece ativo até o corpo da resposta ser totalmente recebido.
+    const body = await response.arrayBuffer();
+    return new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers
+    });
   } catch (error) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
+    if (error.name === 'AbortError' || controller.signal.aborted) {
       const err = new Error('TIMEOUT_EXTERNO');
       err.codigo = 'TIMEOUT_EXTERNO';
       throw err;
     }
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -215,8 +221,16 @@ app.get('/api/comparar', async (req, res) => {
       if (!val.valido) throw { status: 400, codigo: val.codigo, mensagem: `Erro na cidade: ${val.mensagem}` };
       
       const respLoc = await fetchComTimeout(`${SERVICO_LOCALIZACAO_URL}/localizar?nome=${encodeURIComponent(val.nomeLimpo)}`);
+      if (!respLoc.ok) {
+        const erro = await respLoc.json().catch(() => ({}));
+        throw {
+          status: respLoc.status,
+          codigo: erro.erro?.codigo || 'ERRO_LOCALIZACAO',
+          mensagem: erro.erro?.mensagem || 'Não foi possível localizar a cidade.'
+        };
+      }
       const opcoes = await respLoc.json();
-      if (!opcoes || opcoes.length === 0) throw { status: 404, codigo: 'CIDADE_NAO_ENCONTRADA', mensagem: `Cidade "${val.nomeLimpo}" não encontrada.` };
+      if (!Array.isArray(opcoes) || opcoes.length === 0) throw { status: 404, codigo: 'CIDADE_NAO_ENCONTRADA', mensagem: `Cidade "${val.nomeLimpo}" não encontrada.` };
       
       const unicas = filtrarHomonimasUnicas(opcoes);
       if (unicas.length > 1) {
