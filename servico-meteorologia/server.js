@@ -80,7 +80,7 @@ app.get('/clima', async (req, res) => {
   }
 
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,uv_index,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=6`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,uv_index,is_day&hourly=uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=6`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -95,8 +95,27 @@ app.get('/clima', async (req, res) => {
 
     const data = await response.json();
     const current = data.current || {};
+    const hourly = data.hourly || {};
     const daily = data.daily || {};
-    const indiceUV = current.uv_index !== undefined ? current.uv_index : 0;
+
+    let indiceUV = current.uv_index ?? null;
+    if (indiceUV === null && Array.isArray(hourly.time) && Array.isArray(hourly.uv_index) && hourly.time.length) {
+      const horarioAtual = new Date(current.time || new Date().toISOString()).getTime();
+      let indiceMaisProximo = -1;
+      let menorDiferenca = Infinity;
+
+      hourly.time.forEach((horario, index) => {
+        const diferenca = Math.abs(new Date(horario).getTime() - horarioAtual);
+        if (Number.isFinite(diferenca) && diferenca < menorDiferenca && hourly.uv_index[index] !== null) {
+          menorDiferenca = diferenca;
+          indiceMaisProximo = index;
+        }
+      });
+
+      if (indiceMaisProximo >= 0) {
+        indiceUV = hourly.uv_index[indiceMaisProximo];
+      }
+    }
 
     const previsao5Dias = [];
     if (daily.time && Array.isArray(daily.time)) {
